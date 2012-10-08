@@ -1,3 +1,5 @@
+import java.util.Arrays;
+
 import javax.swing.*;        
 
 public class RouterNode {
@@ -18,10 +20,12 @@ public class RouterNode {
 
 		System.arraycopy(costs, 0, this.costs, 0, RouterSimulator.NUM_NODES);
 		
+		// Initialize all distance vectors values to infinity
 		for (int i = 0; i < RouterSimulator.NUM_NODES; i++)
 			for (int j = 0; j < RouterSimulator.NUM_NODES; j++)
 				distanceTable[i][j] = RouterSimulator.INFINITY;
 		
+		// Set this node's distance vector to the direct link costs.
 		System.arraycopy(costs, 0, distanceTable[myID], 0, RouterSimulator.NUM_NODES);
 		
 		for (int i = 0; i < RouterSimulator.NUM_NODES; i++)
@@ -38,24 +42,51 @@ public class RouterNode {
 	//--------------------------------------------------
 	public void recvUpdate(RouterPacket pkt) {
 		
-		boolean changed = false;
+		System.arraycopy(pkt.mincost, 0, distanceTable[pkt.sourceid], 0, RouterSimulator.NUM_NODES);
+		recalculateDistanceVector();
+	}
+
+	private void recalculateDistanceVector() {
+		int[] newDistanceVector = new int[RouterSimulator.NUM_NODES];
+
+		for (int i = 0; i < RouterSimulator.NUM_NODES; i++)
+		{
+			int path = minRoute[i] = findShortestPath(i);
+			newDistanceVector[i] = costs[path] + distanceTable[path][i];
+		}
+
+		if (!Arrays.equals(newDistanceVector, distanceTable[myID])) {
+			distanceTable[myID] = newDistanceVector;
+			sendDistanceVector();
+		}
+	}
+	
+	private int findShortestPath(int dest) {
 		
-		System.arraycopy(pkt.mincost, 0, this.distanceTable[pkt.sourceid], 0, RouterSimulator.NUM_NODES);
+		int distance = costs[dest];
+		int path;
+		
+		if (distance != RouterSimulator.INFINITY)
+			path = myID;
+		else
+			path = RouterSimulator.INFINITY;
+		
 		
 		for (int i = 0; i < RouterSimulator.NUM_NODES; i++)
 		{
-			if (costs[i] + pkt.mincost[i] < distanceTable[myID][i])
-			{
-				distanceTable[myID][i] = costs[i] + pkt.mincost[i];
-				minRoute[i] = pkt.sourceid;
-				changed = true;
+			if (i == myID)
+				continue;
+			
+			if (costs[i] != RouterSimulator.INFINITY &&
+					distanceTable[i][dest] != RouterSimulator.INFINITY &&
+					costs[i] + distanceTable[i][dest] < distance) {
+				distance = costs[i] + distanceTable[i][dest];
+				path = i;
 			}
 		}
-		
-		if (changed)
-			sendDistanceVector();
+		return path;
 	}
-
+	
 	private void sendDistanceVector() {
 		for (int i = 0; i < RouterSimulator.NUM_NODES; i++)
 		{
@@ -79,7 +110,6 @@ public class RouterNode {
 	//--------------------------------------------------
 	private void sendUpdate(RouterPacket pkt) {
 		sim.toLayer2(pkt);
-
 	}
 
 
@@ -94,6 +124,11 @@ public class RouterNode {
 		b = new StringBuilder(F.format("dst", 7) + " | ");
 		for (int i = 0; i < RouterSimulator.NUM_NODES; i++)
 			b.append(F.format(i, 5));
+		myGUI.println(b.toString());
+		
+		for (int i = 0; i < b.length(); i++)
+			myGUI.print("-");
+		myGUI.println();
 		
 		for (int source = 0; source < RouterSimulator.NUM_NODES; source++)
 		{
@@ -110,9 +145,9 @@ public class RouterNode {
 		
 		b = new StringBuilder(F.format("dst", 7) + " | ");
 		for (int i = 0; i < RouterSimulator.NUM_NODES; i++)
-			b.append(F.format(i, 5));
-		
+			b.append(F.format(i, 5));	
 		myGUI.println(b.toString());
+		
 		for (int i = 0; i < b.length(); i++)
 			myGUI.print("-");
 		myGUI.println();
@@ -136,6 +171,8 @@ public class RouterNode {
 
 	//--------------------------------------------------
 	public void updateLinkCost(int dest, int newcost) {
+		costs[dest] = newcost;
+		recalculateDistanceVector();
 	}
 
 }
