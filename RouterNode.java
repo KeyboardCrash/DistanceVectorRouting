@@ -28,6 +28,7 @@ public class RouterNode {
 		// Set this node's distance vector to the direct link costs.
 		System.arraycopy(costs, 0, distanceTable[myID], 0, RouterSimulator.NUM_NODES);
 		
+		// Initialize the minimal routes to the direct links if they exist.
 		for (int i = 0; i < RouterSimulator.NUM_NODES; i++)
 		{
 			if (costs[i] != RouterSimulator.INFINITY)
@@ -46,6 +47,9 @@ public class RouterNode {
 		recalculateDistanceVector();
 	}
 
+	/**
+	 * Recalculate the distance vector of this node.
+	 */
 	private void recalculateDistanceVector() {
 		int[] newDistanceVector = new int[RouterSimulator.NUM_NODES];
 
@@ -61,6 +65,12 @@ public class RouterNode {
 		}
 	}
 	
+	/**
+	 * Finds the shortest path to the router with ID dest.
+	 * @param dest The ID of the router that we should find the shortest
+	 * path to.
+	 * @return The ID of the first router in the path to dest.
+	 */
 	private int findShortestPath(int dest) {
 		
 		int distance = costs[dest];
@@ -77,6 +87,8 @@ public class RouterNode {
 			if (i == myID || i == dest)
 				continue;
 			
+			/* Check if the path through i is shorter than the currently shortest
+			 * path found. */
 			if (costs[i] != RouterSimulator.INFINITY &&
 					distanceTable[i][dest] != RouterSimulator.INFINITY &&
 					costs[i] + distanceTable[i][dest] < distance) {
@@ -88,11 +100,14 @@ public class RouterNode {
 	}
 	
 	private void sendDistanceVector() {
+		
+		// Send distance vector to all adjacent routers
 		for (int i = 0; i < RouterSimulator.NUM_NODES; i++)
 		{
 			if (i == myID || costs[i] == RouterSimulator.INFINITY)
 				continue;
 			
+			// Create a poisoned distance vector
 			int[] distVector = new int[RouterSimulator.NUM_NODES];
 			for (int k = 0; k < RouterSimulator.NUM_NODES; k++)
 			{
@@ -102,6 +117,7 @@ public class RouterNode {
 					distVector[k] = distanceTable[myID][k];
 			}
 			
+			// Send the poisoned distance vector
 			RouterPacket pkt = new RouterPacket(myID, i, distVector);
 			sendUpdate(pkt);
 		}
