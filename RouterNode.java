@@ -56,7 +56,10 @@ public class RouterNode {
 		for (int i = 0; i < RouterSimulator.NUM_NODES; i++)
 		{
 			int path = minRoute[i] = findShortestPath(i);
-			newDistanceVector[i] = costs[path] + distanceTable[path][i];
+			if (path != RouterSimulator.INFINITY)
+				newDistanceVector[i] = costs[path] + distanceTable[path][i];
+			else
+				newDistanceVector[i] = RouterSimulator.INFINITY;
 		}
 
 		if (!Arrays.equals(newDistanceVector, distanceTable[myID])) {
