@@ -3,7 +3,7 @@ import java.util.Arrays;
 import javax.swing.*;        
 
 public class RouterNode {
-	private boolean poisonedReverse = false;
+	private boolean poisonedReverse = true;
 
 	private int myID;
 	private GuiTextArea myGUI;
@@ -67,14 +67,14 @@ public class RouterNode {
 		int path;
 		
 		if (distance != RouterSimulator.INFINITY)
-			path = myID;
+			path = dest;
 		else
 			path = RouterSimulator.INFINITY;
 		
 		
 		for (int i = 0; i < RouterSimulator.NUM_NODES; i++)
 		{
-			if (i == myID)
+			if (i == myID || i == dest)
 				continue;
 			
 			if (costs[i] != RouterSimulator.INFINITY &&
@@ -102,7 +102,7 @@ public class RouterNode {
 					distVector[k] = distanceTable[myID][k];
 			}
 			
-			RouterPacket pkt = new RouterPacket(myID, i, distanceTable[myID]);
+			RouterPacket pkt = new RouterPacket(myID, i, distVector);
 			sendUpdate(pkt);
 		}
 	}
